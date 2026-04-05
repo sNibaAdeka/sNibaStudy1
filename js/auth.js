@@ -162,7 +162,7 @@ SNS.auth = {
     const directionSection = document.getElementById('direction-section');
 
     if (profileSection && directionSection) {
-      if (gradeNum >= 7 && gradeNum <= 9) {
+      if (gradeNum === 9) {
         profileSection.style.display   = 'none';
         directionSection.style.display = 'none';
         document.querySelectorAll('.subj-check').forEach(cb => cb.checked = false);
@@ -217,6 +217,7 @@ SNS.auth = {
     let subjects = [];
     if (gradeNum >= 10) {
       document.querySelectorAll('.subj-check:checked').forEach(cb => subjects.push(cb.value));
+      if (!subjects.length) subjects = ['math', 'physics', 'chemistry', 'biology', 'english'];
     } else {
       subjects = ['math', 'physics', 'chemistry', 'biology', 'english', 'history', 'geography', 'informatics'];
     }

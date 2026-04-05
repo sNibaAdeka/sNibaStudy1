@@ -99,11 +99,16 @@ SNS.router = (function () {
     beforeNavigate = fn;
   }
 
+  function refresh() {
+    handleHashChange();
+  }
+
   return {
     register,
     navigate,
     init,
     getCurrent,
+    refresh,
     onBeforeNavigate,
     parseHash
   };

@@ -59,7 +59,10 @@
       if (SNS.theme) SNS.theme.toggle();
     });
     document.getElementById('lang-toggle-app')?.addEventListener('click', () => {
-      if (SNS.i18n) SNS.i18n.toggle();
+      if (SNS.i18n) {
+        SNS.i18n.toggle();
+        SNS.router.refresh();
+      }
     });
   }
 

@@ -7,17 +7,36 @@ SNS.pages = SNS.pages || {};
 
 SNS.pages.nis = {
   activeSubjectId: 'math',
+  activeGrade: 0, // 0 = all
 
   render(container, params) {
     if (params && params.subject) this.activeSubjectId = params.subject;
+
+    // Default grade from user profile
+    if (this.activeGrade === 0) {
+      const profile = SNS.store.get('profile');
+      const gradeNum = parseInt(profile.grade);
+      if (gradeNum >= 9 && gradeNum <= 12) this.activeGrade = gradeNum;
+    }
+
     const subjects = Object.values(SNS.CURRICULUM);
 
     container.innerHTML = `
       <div class="page-header">
         <div class="page-header-text">
           <h2><i class="fas fa-graduation-cap" style="color:var(--purple);margin-right:8px;"></i>NIS Program</h2>
-          <p>Browse curriculum topics aligned with Nazarbayev Intellectual Schools</p>
+          <p>Browse curriculum topics by subject and grade</p>
         </div>
+      </div>
+
+      <!-- Grade Filter -->
+      <div class="grade-filter-bar">
+        <span class="grade-filter-label">Grade:</span>
+        ${[0, 9, 10, 11, 12].map(g => `
+          <button class="grade-filter-btn ${this.activeGrade === g ? 'active' : ''}" data-grade="${g}">
+            ${g === 0 ? 'All' : g}
+          </button>
+        `).join('')}
       </div>
 
       <div class="nis-layout">
@@ -35,6 +54,17 @@ SNS.pages.nis = {
 
       </div>
     `;
+
+    // Wire grade filter buttons
+    container.querySelectorAll('.grade-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.activeGrade = parseInt(btn.dataset.grade);
+        container.querySelectorAll('.grade-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('topics-panel').innerHTML = this.renderTopicsPanel(SNS.CURRICULUM[this.activeSubjectId]);
+        this.wireTopics();
+      });
+    });
 
     // Wire subject buttons
     container.querySelectorAll('.subject-btn').forEach(btn => {
@@ -75,12 +105,18 @@ SNS.pages.nis = {
     `;
   },
 
+  filterSubtopics(subtopics) {
+    if (this.activeGrade === 0) return subtopics;
+    return subtopics.filter(s => !s.grades || s.grades.includes(this.activeGrade));
+  },
+
   renderTopicsPanel(subject) {
     if (!subject) return '<div class="empty-state"><p>Subject not found.</p></div>';
     const scores = SNS.store.get('quizScores');
 
     const topicsHtml = subject.topics.map((topic, ti) => {
-      const subtopics = topic.subtopics || [];
+      const allSubtopics = topic.subtopics || [];
+      const subtopics = this.filterSubtopics(allSubtopics);
       const studiedSubs = subtopics.filter(s => scores[s.id]).length;
       const pct = subtopics.length ? Math.round((studiedSubs / subtopics.length) * 100) : 0;
 
@@ -88,19 +124,21 @@ SNS.pages.nis = {
         const quizData = scores[sub.id];
         const lastScore = quizData && quizData.length ? quizData[quizData.length - 1].score : null;
         const studied = !!quizData;
+        const gradeTag = sub.grades ? sub.grades.map(g => `<span class="grade-tag">${g}</span>`).join('') : '';
 
         return `
           <div class="subtopic-item ${studied ? 'studied' : ''}" data-subtopic="${sub.id}">
             <div class="subtopic-dot"></div>
             <span class="subtopic-name">${SNS.utils.escapeHtml(sub.title)}</span>
             <div class="subtopic-meta">
+              ${gradeTag}
               ${lastScore != null ? `<span class="badge badge-${SNS.utils.getScoreColor(lastScore)}" style="font-size:10px">${lastScore}%</span>` : ''}
               <span class="subtopic-time"><i class="fas fa-clock"></i>${sub.estimatedMin || 20}m</span>
               <span class="difficulty ${sub.difficulty}" style="font-size:10px">${SNS.utils.capitalize(sub.difficulty || 'medium')}</span>
             </div>
           </div>
         `;
-      }).join('') || '<div class="subtopic-item"><div class="subtopic-dot"></div><span class="subtopic-name text-muted">Coming soon...</span></div>';
+      }).join('') || '<div class="subtopic-item"><div class="subtopic-dot"></div><span class="subtopic-name text-muted">No topics for this grade yet.</span></div>';
 
       return `
         <div class="topic-item">
@@ -125,6 +163,8 @@ SNS.pages.nis = {
       `;
     }).join('');
 
+    const gradeLabel = this.activeGrade ? `Grade ${this.activeGrade}` : 'All Grades';
+
     return `
       <div class="subject-hero">
         <div class="subject-hero-inner">
@@ -133,10 +173,10 @@ SNS.pages.nis = {
           </div>
           <div class="subject-hero-info">
             <h2>${SNS.utils.escapeHtml(subject.label)}</h2>
-            <div style="font-size:13px;color:var(--text-muted)">${SNS.utils.escapeHtml(subject.grade)}</div>
+            <div style="font-size:13px;color:var(--text-muted)">${gradeLabel}</div>
             <div class="subject-hero-stats">
               <span class="subject-hero-stat"><i class="fas fa-layer-group"></i>${subject.topics.length} topics</span>
-              <span class="subject-hero-stat"><i class="fas fa-book-open"></i>${subject.topics.reduce((n,t)=>n+(t.subtopics||[]).length,0)} lessons</span>
+              <span class="subject-hero-stat"><i class="fas fa-book-open"></i>${subject.topics.reduce((n,t)=>n+(this.filterSubtopics(t.subtopics||[])).length,0)} lessons</span>
             </div>
           </div>
         </div>
