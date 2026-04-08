@@ -248,37 +248,109 @@ SNS.pages.study = {
   initQuiz(sub) {
     const panel = document.getElementById('quiz-panel');
     if (!panel) return;
-    if (!sub.quiz || !sub.quiz.length) {
-      panel.innerHTML = '<div class="empty-state" style="padding:30px;"><p>No quiz available for this topic yet.</p></div>';
-      return;
+
+    const quizContainer = document.createElement('div');
+    quizContainer.id = 'quiz-inner';
+    panel.innerHTML = '';
+    panel.appendChild(quizContainer);
+
+    if (sub.quiz && sub.quiz.length) {
+      SNS.quiz.load(sub.quiz, sub.id);
+      SNS.quiz.render(quizContainer, (score) => {
+        this.autoSaveSession(sub, score);
+      });
+    } else {
+      quizContainer.innerHTML = '<div class="empty-state" style="padding:30px;"><p>No quiz available for this topic yet.</p></div>';
     }
-    SNS.quiz.load(sub.quiz, sub.id);
-    SNS.quiz.render(panel, (score) => {
-      this.autoSaveSession(sub, score);
+
+    // AI Generate button
+    const aiRow = document.createElement('div');
+    aiRow.style.cssText = 'padding:12px 0 4px;';
+    aiRow.innerHTML = `
+      <button class="btn btn-ghost btn-sm" id="ai-gen-quiz-btn" style="width:100%;justify-content:center;">
+        <i class="fas fa-sparkles" style="color:var(--accent);"></i> Generate New Quiz with AI
+      </button>
+    `;
+    panel.appendChild(aiRow);
+
+    document.getElementById('ai-gen-quiz-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('ai-gen-quiz-btn');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; }
+      try {
+        const questions = await SNS.gemini.generateQuiz(sub.title, 5);
+        if (!questions || !questions.length) throw new Error('No questions returned');
+        const newId = sub.id + '-ai-' + Date.now();
+        SNS.quiz.load(questions, newId);
+        SNS.quiz.render(quizContainer, (score) => this.autoSaveSession(sub, score));
+        SNS.utils.toast('AI quiz generated!', 'success');
+      } catch (err) {
+        SNS.utils.toast('Failed to generate quiz: ' + (err.message || 'try again'), 'error');
+      } finally {
+        const b = document.getElementById('ai-gen-quiz-btn');
+        if (b) { b.disabled = false; b.innerHTML = '<i class="fas fa-sparkles" style="color:var(--accent);"></i> Generate New Quiz with AI'; }
+      }
     });
   },
 
   initFlashcards(sub) {
     const panel = document.getElementById('flashcards-panel');
     if (!panel) return;
-    if (!sub.flashcards || !sub.flashcards.length) {
-      panel.innerHTML = '<div class="empty-state" style="padding:30px;"><p>No flashcards for this topic yet.</p></div>';
-      return;
+
+    const fcContainer = document.createElement('div');
+    fcContainer.id = 'fc-inner';
+    panel.innerHTML = '';
+    panel.appendChild(fcContainer);
+
+    if (sub.flashcards && sub.flashcards.length) {
+      SNS.flashcards.load(sub.flashcards, sub.id);
+      SNS.flashcards.renderCard(fcContainer);
+    } else {
+      fcContainer.innerHTML = '<div class="empty-state" style="padding:30px;"><p>No flashcards for this topic yet.</p></div>';
     }
-    SNS.flashcards.load(sub.flashcards, sub.id);
-    SNS.flashcards.renderCard(panel);
+
+    // AI Generate button
+    const aiRow = document.createElement('div');
+    aiRow.style.cssText = 'padding:12px 0 4px;';
+    aiRow.innerHTML = `
+      <button class="btn btn-ghost btn-sm" id="ai-gen-fc-btn" style="width:100%;justify-content:center;">
+        <i class="fas fa-sparkles" style="color:var(--accent);"></i> Generate More Cards with AI
+      </button>
+    `;
+    panel.appendChild(aiRow);
+
+    document.getElementById('ai-gen-fc-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('ai-gen-fc-btn');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; }
+      try {
+        const newCards = await SNS.gemini.generateFlashcards(sub.title, 5);
+        if (!newCards || !newCards.length) throw new Error('No cards returned');
+        const merged = [...(sub.flashcards || []), ...newCards];
+        const newId = sub.id + '-ai';
+        SNS.flashcards.load(merged, newId);
+        SNS.flashcards.renderCard(fcContainer);
+        SNS.utils.toast(`${newCards.length} new AI cards added!`, 'success');
+      } catch (err) {
+        SNS.utils.toast('Failed to generate cards: ' + (err.message || 'try again'), 'error');
+      } finally {
+        const b = document.getElementById('ai-gen-fc-btn');
+        if (b) { b.disabled = false; b.innerHTML = '<i class="fas fa-sparkles" style="color:var(--accent);"></i> Generate More Cards with AI'; }
+      }
+    });
   },
 
   initChat(sub, subject) {
     const panel = document.getElementById('chat-panel');
     if (!panel) return;
 
+    // Build system context passed to Gemini for every message
+    const systemContext = `You are a helpful study assistant for NIS (Nazarbayev Intellectual Schools) students in Kazakhstan. The student is currently studying the topic "${sub.title}" in ${subject.label}. Answer clearly, accurately, and at a high school level. Use **bold** for key terms. Keep responses concise unless the student asks for detail.`;
+
     panel.innerHTML = `
       <div class="chatbot-messages" id="chat-messages">
         <div class="chat-msg bot">
           <div class="chat-avatar"><i class="fas fa-robot"></i></div>
           <div class="chat-bubble">
-            Hi! I'm your AI study assistant for <strong>${SNS.utils.escapeHtml(sub.title)}</strong>. 🤖<br>
+            Hi! I'm your Gemini AI study assistant for <strong>${SNS.utils.escapeHtml(sub.title)}</strong>.<br>
             Ask me anything about this topic — I can explain concepts, give examples, and simplify difficult parts!
           </div>
         </div>
@@ -291,7 +363,9 @@ SNS.pages.study = {
       </div>
     `;
 
-    const sendMsg = () => {
+    const chatHistory = [];
+
+    const sendMsg = async () => {
       const input = document.getElementById('chat-input');
       const text = input?.value.trim();
       if (!text) return;
@@ -299,11 +373,44 @@ SNS.pages.study = {
       addChatMessage(text, 'user');
       input.value = '';
 
-      setTimeout(() => {
-        const response = SNS.chatbot.findResponse(text, subject.id);
-        const formatted = SNS.chatbot.formatResponse(response);
-        addChatMessage(formatted, 'bot', true);
-      }, 400);
+      // Disable input while waiting
+      if (input) input.disabled = true;
+      const sendBtn = document.getElementById('chat-send-btn');
+      if (sendBtn) sendBtn.disabled = true;
+
+      // Show typing indicator
+      const typingId = 'chat-typing-' + Date.now();
+      const messages = document.getElementById('chat-messages');
+      if (messages) {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'chat-msg bot';
+        typingDiv.id = typingId;
+        typingDiv.innerHTML = `
+          <div class="chat-avatar"><i class="fas fa-robot"></i></div>
+          <div class="chat-bubble" style="color:var(--text-muted)"><i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Thinking...</div>
+        `;
+        messages.appendChild(typingDiv);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      try {
+        const response = await SNS.gemini.ask(text, systemContext, chatHistory);
+        // Add to history for context continuity
+        chatHistory.push({ role: 'user', text });
+        chatHistory.push({ role: 'model', text: response });
+        // Keep history manageable (last 10 turns = 20 entries)
+        if (chatHistory.length > 20) chatHistory.splice(0, 2);
+
+        document.getElementById(typingId)?.remove();
+        addChatMessage(formatExplanation(response), 'bot', true);
+      } catch (err) {
+        document.getElementById(typingId)?.remove();
+        addChatMessage(`<span style="color:var(--red,#f87171)"><i class="fas fa-triangle-exclamation"></i> Error: ${SNS.utils.escapeHtml(err.message || 'Could not reach Gemini. Check your connection.')}</span>`, 'bot', true);
+      } finally {
+        if (input) input.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        input?.focus();
+      }
     };
 
     document.getElementById('chat-send-btn')?.addEventListener('click', sendMsg);

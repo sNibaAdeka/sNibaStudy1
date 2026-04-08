@@ -141,6 +141,12 @@
       subtitle: 'Account settings',
       render: (c, p) => SNS.pages.profile.render(c, p)
     });
+
+    R('ai-tutor', {
+      title: 'AI Tutor',
+      subtitle: 'Gemini-powered study assistant',
+      render: (c, p) => SNS.pages.aiTutor.render(c, p)
+    });
   }
 
   // ── Sidebar Navigation ──

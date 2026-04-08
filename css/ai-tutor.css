@@ -1,0 +1,281 @@
+/* ═══════════════════════════════════════════
+   sNibaStudy — AI Tutor Page
+   ═══════════════════════════════════════════ */
+
+/* ── Layout ── */
+.ai-tutor-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: var(--card-gap);
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .ai-tutor-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Input Panel ── */
+.ai-tutor-input-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ai-tutor-input-panel h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-tutor-input-panel h3 i { color: var(--accent); }
+
+.ai-tutor-input-panel textarea {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  resize: vertical;
+  min-height: 90px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.ai-tutor-input-panel textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ── File Upload Zone ── */
+.file-upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 18px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+
+.file-upload-zone:hover,
+.file-upload-zone.dragover {
+  border-color: var(--accent);
+  background: var(--accent-dim, rgba(0, 212, 170, 0.06));
+}
+
+.file-upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.file-upload-zone .upload-icon {
+  font-size: 24px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.file-upload-zone .upload-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.file-upload-zone .upload-label strong {
+  color: var(--accent);
+}
+
+/* ── File Badge ── */
+.file-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-dim, rgba(0, 212, 170, 0.08));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.file-badge i { color: var(--accent); }
+
+.file-badge .file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-badge .remove-file {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: color 0.15s;
+}
+
+.file-badge .remove-file:hover { color: var(--red, #f87171); }
+
+/* ── Action Buttons ── */
+.ai-tutor-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-tutor-actions .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ── Output Panel ── */
+.ai-tutor-output {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 300px;
+}
+
+.ai-tutor-placeholder {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 60px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-tutor-placeholder .placeholder-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-dim, rgba(0, 212, 170, 0.1));
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.ai-tutor-placeholder h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ai-tutor-placeholder p {
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 360px;
+  line-height: 1.5;
+}
+
+/* ── Result Card ── */
+.ai-result-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.ai-result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-subtle, var(--bg-card));
+}
+
+.ai-result-header i { color: var(--accent); font-size: 16px; }
+
+.ai-result-header .result-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.ai-result-body {
+  padding: 18px;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.7;
+}
+
+.ai-result-body strong { color: var(--text-primary); }
+
+/* ── Loading State ── */
+.ai-loading-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.ai-loading-card i { font-size: 20px; color: var(--accent); }
+
+/* ── Generated cards/quiz inside AI Tutor ── */
+.ai-tutor-generated {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.ai-tutor-generated-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ai-tutor-generated-header i { color: var(--accent); }
+
+.ai-tutor-generated-body {
+  padding: 18px;
+}
+
+/* ── Typing cursor animation ── */
+.typing-cursor::after {
+  content: '▌';
+  animation: blink 0.8s step-end infinite;
+  color: var(--accent);
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
